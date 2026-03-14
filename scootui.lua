@@ -102,6 +102,8 @@ local Library do
         RoundedCorners = true,
         CornerRadius = UDimNew(0, 8),
         SmallCornerRadius = UDimNew(0, 4),
+        
+        Windows = {},
     }
 
     -- Initialize UI
@@ -145,6 +147,7 @@ local Library do
         mainFrame.BackgroundColor3 = self.Theme.Background
         mainFrame.BorderSizePixel = 0
         mainFrame.ClipsDescendants = true
+        mainFrame.Active = true
         mainFrame.Parent = self.Holder
 
         -- Shadow
@@ -160,6 +163,7 @@ local Library do
         shadow.SliceCenter = RectNew(10, 10, 10, 10)
         shadow.Parent = mainFrame
         shadow.ZIndex = -1
+        shadow.Active = false
 
         if self.RoundedCorners then
             local corner = InstanceNew("UICorner")
@@ -167,12 +171,13 @@ local Library do
             corner.Parent = mainFrame
         end
 
-        -- Title bar
+        -- Title bar - ONLY this is draggable
         local titleBar = InstanceNew("Frame")
         titleBar.Name = "TitleBar"
         titleBar.Size = UDim2New(1, 0, 0, 48)
         titleBar.BackgroundColor3 = self.Theme.Surface
         titleBar.BorderSizePixel = 0
+        titleBar.Active = true
         titleBar.Parent = mainFrame
 
         if self.RoundedCorners then
@@ -190,6 +195,7 @@ local Library do
         logo.Image = self.Images.Logo
         logo.ImageColor3 = self.Theme.Accent
         logo.Parent = titleBar
+        logo.Active = false
 
         -- Title
         local titleLabel = InstanceNew("TextLabel")
@@ -203,6 +209,7 @@ local Library do
         titleLabel.TextSize = 16
         titleLabel.TextXAlignment = Enum.TextXAlignment.Left
         titleLabel.Parent = titleBar
+        titleLabel.Active = false
 
         -- Window controls
         local buttonContainer = InstanceNew("Frame")
@@ -211,6 +218,7 @@ local Library do
         buttonContainer.Position = UDim2New(1, -88, 0, 0)
         buttonContainer.BackgroundTransparency = 1
         buttonContainer.Parent = titleBar
+        buttonContainer.Active = false
 
         -- Minimize button
         local minimizeButton = InstanceNew("TextButton")
@@ -223,6 +231,8 @@ local Library do
         minimizeButton.Font = self.Font
         minimizeButton.TextSize = 20
         minimizeButton.Parent = buttonContainer
+        minimizeButton.Active = true
+        minimizeButton.AutoButtonColor = false
 
         -- Close button
         local closeButton = InstanceNew("TextButton")
@@ -235,6 +245,8 @@ local Library do
         closeButton.Font = self.Font
         closeButton.TextSize = 24
         closeButton.Parent = buttonContainer
+        closeButton.Active = true
+        closeButton.AutoButtonColor = false
 
         if self.RoundedCorners then
             local minCorner = InstanceNew("UICorner")
@@ -269,7 +281,8 @@ local Library do
         minimizeButton.MouseButton1Click:Connect(function()
             minimized = not minimized
             
-            -- Collect all content frames except title bar and shadow
+            -- Collect all content frames
+            contentFrames = {}
             for _, child in pairs(mainFrame:GetChildren()) do
                 if child ~= titleBar and child ~= shadow and child:IsA("Frame") then
                     TableInsert(contentFrames, child)
@@ -277,35 +290,27 @@ local Library do
             end
 
             if minimized then
-                -- Hide content with animation
+                -- Hide content
                 for _, frame in pairs(contentFrames) do
-                    TweenService:Create(frame, TweenInfo.new(0.2), {
-                        BackgroundTransparency = 1,
-                        Size = UDim2New(0, 0, 0, 0)
-                    }):Play()
                     frame.Visible = false
                 end
                 
                 -- Shrink window
-                TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+                TweenService:Create(mainFrame, TweenInfo.new(0.25), {
                     Size = UDim2New(originalSize.X.Scale, originalSize.X.Offset, 0, 48)
                 }):Play()
                 
                 minimizeButton.Text = "□"
             else
                 -- Show window
-                TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+                TweenService:Create(mainFrame, TweenInfo.new(0.25), {
                     Size = originalSize
                 }):Play()
                 
-                -- Show content after window expands
+                -- Show content after a short delay
                 task.wait(0.15)
                 for _, frame in pairs(contentFrames) do
                     frame.Visible = true
-                    TweenService:Create(frame, TweenInfo.new(0.2), {
-                        BackgroundTransparency = 0,
-                        Size = UDim2New(1, 0, 1, -48) -- Adjust based on actual size
-                    }):Play()
                 end
                 
                 minimizeButton.Text = "—"
@@ -325,6 +330,7 @@ local Library do
         sidebar.BackgroundColor3 = self.Theme.Surface
         sidebar.BorderSizePixel = 0
         sidebar.Parent = mainFrame
+        sidebar.Active = false
 
         if self.RoundedCorners then
             local sidebarCorner = InstanceNew("UICorner")
@@ -344,8 +350,9 @@ local Library do
         sidebarTitle.TextSize = 11
         sidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
         sidebarTitle.Parent = sidebar
+        sidebarTitle.Active = false
 
-        -- Tab container
+        -- Tab container (ScrollingFrame)
         local tabContainer = InstanceNew("ScrollingFrame")
         tabContainer.Name = "TabContainer"
         tabContainer.Size = UDim2New(1, 0, 1, -60)
@@ -357,6 +364,7 @@ local Library do
         tabContainer.CanvasSize = UDim2New(0, 0, 0, 0)
         tabContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
         tabContainer.Parent = sidebar
+        tabContainer.Active = true
 
         -- Content area
         local contentArea = InstanceNew("Frame")
@@ -366,6 +374,7 @@ local Library do
         contentArea.BackgroundColor3 = self.Theme.Background
         contentArea.BorderSizePixel = 0
         contentArea.Parent = mainFrame
+        contentArea.Active = false
 
         if self.RoundedCorners then
             local contentCorner = InstanceNew("UICorner")
@@ -373,18 +382,20 @@ local Library do
             contentCorner.Parent = contentArea
         end
 
-        -- Dragging
+        -- FIXED Dragging - Only title bar triggers drag
         local dragging = false
         local dragInput
         local dragStart
         local startPos
 
+        -- Only the title bar initiates dragging
         titleBar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
                 dragStart = input.Position
                 startPos = mainFrame.Position
-
+                
+                -- Capture mouse to prevent losing drag
                 input.Changed:Connect(function()
                     if input.UserInputState == Enum.UserInputState.End then
                         dragging = false
@@ -399,6 +410,7 @@ local Library do
             end
         end)
 
+        -- Global input changed for dragging
         UserInputService.InputChanged:Connect(function(input)
             if input == dragInput and dragging and not minimized then
                 local delta = input.Position - dragStart
@@ -408,12 +420,15 @@ local Library do
                     startPos.Y.Scale,
                     startPos.Y.Offset + delta.Y
                 )
-                -- Keep window on screen
-                newPos = UDim2New(
-                    MathClamp(newPos.X.Offset, -mainFrame.AbsoluteSize.X + 50, Camera.ViewportSize.X - 50),
-                    MathClamp(newPos.Y.Offset, -mainFrame.AbsoluteSize.Y + 50, Camera.ViewportSize.Y - 50)
-                )
                 mainFrame.Position = newPos
+            end
+        end)
+
+        -- Prevent drag when clicking on other elements
+        mainFrame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                -- Stop propagation to prevent accidental dragging
+                input:Block()
             end
         end)
 
@@ -423,17 +438,24 @@ local Library do
         window.TabContainer = tabContainer
         window.ContentArea = contentArea
         window.Tabs = {}
+        window.TitleBar = titleBar
 
+        -- FIXED: Add Tab method with proper functionality
         function window:AddTab(name, icon)
+            local tabIndex = #self.Tabs + 1
+            
             local tabButton = InstanceNew("TextButton")
             tabButton.Name = name.."Tab"
             tabButton.Size = UDim2New(1, -20, 0, 38)
-            tabButton.Position = UDim2New(0, 10, 0, (#self.Tabs * 43))
+            tabButton.Position = UDim2New(0, 10, 0, (tabIndex - 1) * 43)
             tabButton.BackgroundColor3 = Library.Theme.Element
             tabButton.BackgroundTransparency = 0.8
             tabButton.Text = ""
             tabButton.Parent = tabContainer
+            tabButton.AutoButtonColor = false
+            tabButton.Active = true
 
+            -- Button text
             local buttonText = InstanceNew("TextLabel")
             buttonText.Name = "Text"
             buttonText.Size = UDim2New(1, -30, 1, 0)
@@ -445,10 +467,7 @@ local Library do
             buttonText.TextSize = 13
             buttonText.TextXAlignment = Enum.TextXAlignment.Left
             buttonText.Parent = tabButton
-
-            if icon then
-                -- Icon support can be added here
-            end
+            buttonText.Active = false
 
             if Library.RoundedCorners then
                 local btnCorner = InstanceNew("UICorner")
@@ -456,6 +475,7 @@ local Library do
                 btnCorner.Parent = tabButton
             end
 
+            -- Tab content container (ScrollingFrame)
             local tabContent = InstanceNew("ScrollingFrame")
             tabContent.Name = name.."Content"
             tabContent.Size = UDim2New(1, -20, 1, -20)
@@ -468,6 +488,7 @@ local Library do
             tabContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
             tabContent.Visible = false
             tabContent.Parent = contentArea
+            tabContent.Active = true
 
             -- Selection indicator
             local indicator = InstanceNew("Frame")
@@ -478,6 +499,7 @@ local Library do
             indicator.BorderSizePixel = 0
             indicator.Visible = false
             indicator.Parent = tabButton
+            indicator.Active = false
 
             if Library.RoundedCorners then
                 local indCorner = InstanceNew("UICorner")
@@ -485,7 +507,8 @@ local Library do
                 indCorner.Parent = indicator
             end
 
-            if #self.Tabs == 0 then
+            -- Set first tab as active
+            if tabIndex == 1 then
                 tabContent.Visible = true
                 tabButton.BackgroundColor3 = Library.Theme.ElementHover
                 tabButton.BackgroundTransparency = 0
@@ -493,27 +516,27 @@ local Library do
                 Library.CurrentPage = tabContent
             end
 
+            -- FIXED: Tab click handler
             tabButton.MouseButton1Click:Connect(function()
+                -- Hide all tabs
                 for _, otherTab in pairs(self.Tabs) do
                     otherTab.Content.Visible = false
-                    TweenService:Create(otherTab.Button, TweenInfo.new(0.15), {
-                        BackgroundColor3 = Library.Theme.Element,
-                        BackgroundTransparency = 0.8
-                    }):Play()
+                    otherTab.Button.BackgroundColor3 = Library.Theme.Element
+                    otherTab.Button.BackgroundTransparency = 0.8
                     if otherTab.Indicator then
                         otherTab.Indicator.Visible = false
                     end
                 end
 
-                TweenService:Create(tabButton, TweenInfo.new(0.15), {
-                    BackgroundColor3 = Library.Theme.ElementHover,
-                    BackgroundTransparency = 0
-                }):Play()
-                indicator.Visible = true
+                -- Show selected tab
                 tabContent.Visible = true
+                tabButton.BackgroundColor3 = Library.Theme.ElementHover
+                tabButton.BackgroundTransparency = 0
+                indicator.Visible = true
                 Library.CurrentPage = tabContent
             end)
 
+            -- Hover effects
             tabButton.MouseEnter:Connect(function()
                 if tabContent.Visible then return end
                 TweenService:Create(tabButton, TweenInfo.new(0.15), {
@@ -530,22 +553,31 @@ local Library do
                 }):Play()
             end)
 
+            -- Store tab
             local tab = {
                 Name = name,
                 Button = tabButton,
                 Content = tabContent,
-                Indicator = indicator
+                Indicator = indicator,
+                Index = tabIndex
             }
 
             TableInsert(self.Tabs, tab)
+            
+            -- Update container canvas size
+            tabContainer.CanvasSize = UDim2New(0, 0, 0, (#self.Tabs * 43) + 10)
+            
             return tab
         end
 
+        TableInsert(self.Windows, window)
         return window
     end
 
     -- Section creation
     function Library:AddSection(tab, title)
+        if not tab or not tab.Content then return nil end
+        
         local sectionCount = self:GetSectionCount(tab)
         
         local section = InstanceNew("Frame")
@@ -555,6 +587,7 @@ local Library do
         section.BackgroundColor3 = self.Theme.Surface
         section.BorderSizePixel = 0
         section.Parent = tab.Content
+        section.Active = false
 
         if self.RoundedCorners then
             local sectionCorner = InstanceNew("UICorner")
@@ -569,6 +602,7 @@ local Library do
         header.BackgroundColor3 = self.Theme.Element
         header.BorderSizePixel = 0
         header.Parent = section
+        header.Active = false
 
         if self.RoundedCorners then
             local headerCorner = InstanceNew("UICorner")
@@ -587,6 +621,7 @@ local Library do
         titleLabel.TextSize = 12
         titleLabel.TextXAlignment = Enum.TextXAlignment.Left
         titleLabel.Parent = header
+        titleLabel.Active = false
 
         -- Content container
         local content = InstanceNew("Frame")
@@ -595,12 +630,15 @@ local Library do
         content.Position = UDim2New(0, 10, 0, 43)
         content.BackgroundTransparency = 1
         content.Parent = section
+        content.Active = false
 
         return content
     end
 
     -- Button
     function Library:AddButton(section, text, callback)
+        if not section then return nil end
+        
         local button = InstanceNew("TextButton")
         button.Name = text.."Button"
         button.Size = UDim2New(1, 0, 0, 32)
@@ -608,6 +646,8 @@ local Library do
         button.BackgroundColor3 = self.Theme.Element
         button.Text = ""
         button.Parent = section
+        button.AutoButtonColor = false
+        button.Active = true
 
         if self.RoundedCorners then
             local btnCorner = InstanceNew("UICorner")
@@ -626,6 +666,7 @@ local Library do
         buttonText.TextSize = 13
         buttonText.TextXAlignment = Enum.TextXAlignment.Left
         buttonText.Parent = button
+        buttonText.Active = false
 
         button.MouseButton1Click:Connect(function()
             if callback then
@@ -644,14 +685,14 @@ local Library do
             TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = self.Theme.Element}):Play()
         end)
 
-        -- Update section size
         self:UpdateSectionSize(section.Parent)
-
         return button
     end
 
     -- Toggle
     function Library:AddToggle(section, text, default, callback)
+        if not section then return nil end
+        
         local toggle = InstanceNew("Frame")
         toggle.Name = text.."Toggle"
         toggle.Size = UDim2New(1, 0, 0, 32)
@@ -659,6 +700,7 @@ local Library do
         toggle.BackgroundColor3 = self.Theme.Element
         toggle.BackgroundTransparency = 0.5
         toggle.Parent = section
+        toggle.Active = true
 
         if self.RoundedCorners then
             local toggleCorner = InstanceNew("UICorner")
@@ -677,6 +719,7 @@ local Library do
         toggleLabel.TextSize = 13
         toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
         toggleLabel.Parent = toggle
+        toggleLabel.Active = false
 
         local toggleButton = InstanceNew("Frame")
         toggleButton.Name = "ToggleButton"
@@ -684,6 +727,7 @@ local Library do
         toggleButton.Position = UDim2New(1, -54, 0.5, -11)
         toggleButton.BackgroundColor3 = self.Theme.ElementHover
         toggleButton.Parent = toggle
+        toggleButton.Active = false
 
         if self.RoundedCorners then
             local btnCorner = InstanceNew("UICorner")
@@ -697,6 +741,7 @@ local Library do
         toggleIndicator.Position = UDim2New(0, 2, 0.5, -9)
         toggleIndicator.BackgroundColor3 = self.Theme.Text
         toggleIndicator.Parent = toggleButton
+        toggleIndicator.Active = false
 
         if self.RoundedCorners then
             local indCorner = InstanceNew("UICorner")
@@ -735,8 +780,10 @@ local Library do
         return toggle
     end
 
-    -- Slider (Fixed)
+    -- Slider
     function Library:AddSlider(section, text, min, max, default, callback)
+        if not section then return nil end
+        
         min = min or 0
         max = max or 100
         default = default or min
@@ -747,6 +794,7 @@ local Library do
         slider.Position = UDim2New(0, 0, 0, self:GetElementsInSection(section) * 37)
         slider.BackgroundTransparency = 1
         slider.Parent = section
+        slider.Active = true
 
         local sliderLabel = InstanceNew("TextLabel")
         sliderLabel.Name = "Label"
@@ -759,6 +807,7 @@ local Library do
         sliderLabel.TextSize = 13
         sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
         sliderLabel.Parent = slider
+        sliderLabel.Active = false
 
         local valueLabel = InstanceNew("TextLabel")
         valueLabel.Name = "Value"
@@ -771,6 +820,7 @@ local Library do
         valueLabel.TextSize = 13
         valueLabel.TextXAlignment = Enum.TextXAlignment.Right
         valueLabel.Parent = slider
+        valueLabel.Active = false
 
         -- Slider background
         local sliderBg = InstanceNew("Frame")
@@ -780,6 +830,7 @@ local Library do
         sliderBg.BackgroundColor3 = self.Theme.Element
         sliderBg.BorderSizePixel = 0
         sliderBg.Parent = slider
+        sliderBg.Active = false
 
         if self.RoundedCorners then
             local bgCorner = InstanceNew("UICorner")
@@ -794,6 +845,7 @@ local Library do
         sliderFill.BackgroundColor3 = self.Theme.Accent
         sliderFill.BorderSizePixel = 0
         sliderFill.Parent = sliderBg
+        sliderFill.Active = false
 
         if self.RoundedCorners then
             local fillCorner = InstanceNew("UICorner")
@@ -804,10 +856,13 @@ local Library do
         -- Slider button (draggable)
         local sliderButton = InstanceNew("TextButton")
         sliderButton.Name = "Button"
-        sliderButton.Size = UDim2New(1, 0, 1, 0)
+        sliderButton.Size = UDim2New(1, 0, 3, 0)
+        sliderButton.Position = UDim2New(0, 0, 0, -1)
         sliderButton.BackgroundTransparency = 1
         sliderButton.Text = ""
         sliderButton.Parent = sliderBg
+        sliderButton.Active = true
+        sliderButton.AutoButtonColor = false
 
         local value = default
         local dragging = false
@@ -822,7 +877,7 @@ local Library do
             valueLabel.Text = tostring(value)
 
             if callback then
-                callback(value)
+                pcall(function() callback(value) end)
             end
         end
 
@@ -850,8 +905,10 @@ local Library do
         return slider
     end
 
-    -- Dropdown (Fixed)
+    -- Dropdown
     function Library:AddDropdown(section, text, options, default, callback)
+        if not section then return nil end
+        
         options = options or {"Option 1", "Option 2", "Option 3"}
         local selected = default or options[1]
 
@@ -863,6 +920,7 @@ local Library do
         dropdown.BackgroundTransparency = 0.5
         dropdown.ClipsDescendants = true
         dropdown.Parent = section
+        dropdown.Active = true
 
         if self.RoundedCorners then
             local dropCorner = InstanceNew("UICorner")
@@ -881,6 +939,7 @@ local Library do
         dropLabel.TextSize = 13
         dropLabel.TextXAlignment = Enum.TextXAlignment.Left
         dropLabel.Parent = dropdown
+        dropLabel.Active = false
 
         local arrow = InstanceNew("TextLabel")
         arrow.Name = "Arrow"
@@ -892,6 +951,7 @@ local Library do
         arrow.Font = self.Font
         arrow.TextSize = 12
         arrow.Parent = dropdown
+        arrow.Active = false
 
         local dropContainer = InstanceNew("Frame")
         dropContainer.Name = "Container"
@@ -900,6 +960,7 @@ local Library do
         dropContainer.BackgroundTransparency = 1
         dropContainer.ClipsDescendants = true
         dropContainer.Parent = dropdown
+        dropContainer.Active = false
 
         local expanded = false
 
@@ -913,6 +974,8 @@ local Library do
                 optionBtn.Text = ""
                 optionBtn.Parent = dropContainer
                 optionBtn.Visible = false
+                optionBtn.Active = true
+                optionBtn.AutoButtonColor = false
 
                 if self.RoundedCorners then
                     local optCorner = InstanceNew("UICorner")
@@ -930,6 +993,7 @@ local Library do
                 optText.TextSize = 13
                 optText.TextXAlignment = Enum.TextXAlignment.Left
                 optText.Parent = optionBtn
+                optText.Active = false
 
                 optionBtn.MouseButton1Click:Connect(function()
                     selected = option
@@ -954,12 +1018,10 @@ local Library do
             expanded = not expanded
             
             if expanded then
-                -- Create options if they don't exist
                 if #dropContainer:GetChildren() == 0 then
                     createOptions()
                 end
 
-                -- Show options
                 for _, child in pairs(dropContainer:GetChildren()) do
                     child.Visible = true
                 end
@@ -968,7 +1030,6 @@ local Library do
                 TweenService:Create(dropdown, TweenInfo.new(0.2), {Size = targetSize}):Play()
                 arrow.Text = "▲"
             else
-                -- Hide options
                 for _, child in pairs(dropContainer:GetChildren()) do
                     child.Visible = false
                 end
@@ -988,8 +1049,10 @@ local Library do
         return dropdown
     end
 
-    -- Color Picker (Basic)
+    -- Color Picker
     function Library:AddColorPicker(section, text, default, callback)
+        if not section then return nil end
+        
         local colorPicker = InstanceNew("Frame")
         colorPicker.Name = text.."ColorPicker"
         colorPicker.Size = UDim2New(1, 0, 0, 32)
@@ -997,6 +1060,7 @@ local Library do
         colorPicker.BackgroundColor3 = self.Theme.Element
         colorPicker.BackgroundTransparency = 0.5
         colorPicker.Parent = section
+        colorPicker.Active = true
 
         if self.RoundedCorners then
             local pickerCorner = InstanceNew("UICorner")
@@ -1015,6 +1079,7 @@ local Library do
         pickerLabel.TextSize = 13
         pickerLabel.TextXAlignment = Enum.TextXAlignment.Left
         pickerLabel.Parent = colorPicker
+        pickerLabel.Active = false
 
         local colorDisplay = InstanceNew("Frame")
         colorDisplay.Name = "Color"
@@ -1022,6 +1087,7 @@ local Library do
         colorDisplay.Position = UDim2New(1, -34, 0.5, -12)
         colorDisplay.BackgroundColor3 = default or self.Theme.Accent
         colorDisplay.Parent = colorPicker
+        colorDisplay.Active = false
 
         if self.RoundedCorners then
             local displayCorner = InstanceNew("UICorner")
@@ -1029,10 +1095,8 @@ local Library do
             displayCorner.Parent = colorDisplay
         end
 
-        -- Simple color picker (can be expanded)
         colorPicker.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                -- Simple color cycle for demo
                 local h, s, v = colorDisplay.BackgroundColor3:ToHSV()
                 h = (h + 0.1) % 1
                 local newColor = FromHSV(h, s, v)
@@ -1058,6 +1122,7 @@ local Library do
         notification.BorderSizePixel = 0
         notification.ClipsDescendants = true
         notification.Parent = self.NotifHolder
+        notification.Active = false
 
         if self.RoundedCorners then
             local notifCorner = InstanceNew("UICorner")
@@ -1065,15 +1130,14 @@ local Library do
             notifCorner.Parent = notification
         end
 
-        -- Progress bar
         local progress = InstanceNew("Frame")
         progress.Name = "Progress"
         progress.Size = UDim2New(1, 0, 0, 2)
         progress.Position = UDim2New(0, 0, 1, -2)
         progress.BackgroundColor3 = self.Theme.Accent
         progress.Parent = notification
+        progress.Active = false
 
-        -- Content
         local titleLabel = InstanceNew("TextLabel")
         titleLabel.Name = "Title"
         titleLabel.Size = UDim2New(1, -20, 0, 24)
@@ -1085,6 +1149,7 @@ local Library do
         titleLabel.TextSize = 12
         titleLabel.TextXAlignment = Enum.TextXAlignment.Left
         titleLabel.Parent = notification
+        titleLabel.Active = false
 
         local messageLabel = InstanceNew("TextLabel")
         messageLabel.Name = "Message"
@@ -1099,48 +1164,48 @@ local Library do
         messageLabel.TextXAlignment = Enum.TextXAlignment.Left
         messageLabel.TextYAlignment = Enum.TextYAlignment.Top
         messageLabel.Parent = notification
+        messageLabel.Active = false
 
-        -- Calculate height
         local textSize = TextService:GetTextSize(message, 13, self.Font, Vector2New(330, math.huge))
         notification.Size = UDim2New(1, 0, 0, textSize.Y + 40)
         messageLabel.Size = UDim2New(1, -20, 0, textSize.Y)
 
-        -- Position off-screen
         notification.Position = UDim2New(0, 0, 0, -notification.Size.Y.Offset)
         
-        -- Animate in
-        TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+        TweenService:Create(notification, TweenInfo.new(0.3), {
             Position = UDim2New(0, 0, 0, 0)
         }):Play()
 
-        -- Progress animation
-        TweenService:Create(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+        TweenService:Create(progress, TweenInfo.new(duration), {
             Size = UDim2New(0, 0, 0, 2)
         }):Play()
 
-        -- Remove after duration
         task.delay(duration, function()
-            TweenService:Create(notification, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+            TweenService:Create(notification, TweenInfo.new(0.3), {
                 Position = UDim2New(0, 0, 0, -notification.Size.Y.Offset)
             }):Play()
-            task.delay(0.3, notification.Destroy, notification)
+            task.delay(0.3, function()
+                if notification then
+                    notification:Destroy()
+                end
+            end)
         end)
     end
 
     -- Helper functions
     function Library:GetSectionCount(tab)
+        if not tab or not tab.Content then return 0 end
         local count = 0
-        if tab and tab.Content then
-            for _, child in pairs(tab.Content:GetChildren()) do
-                if child:IsA("Frame") and child.Name:match("Section$") then
-                    count = count + 1
-                end
+        for _, child in pairs(tab.Content:GetChildren()) do
+            if child:IsA("Frame") and child.Name:match("Section$") then
+                count = count + 1
             end
         end
         return count
     end
 
     function Library:GetElementsInSection(section)
+        if not section then return 0 end
         local count = 0
         for _, child in pairs(section:GetChildren()) do
             if child:IsA("TextButton") or 
@@ -1158,7 +1223,9 @@ local Library do
         if not section then return end
         local elementCount = self:GetElementsInSection(section)
         local newHeight = 48 + (elementCount * 37)
-        section.Parent.Size = UDim2New(1, 0, 0, newHeight)
+        if section.Parent then
+            section.Parent.Size = UDim2New(1, 0, 0, newHeight)
+        end
     end
 
     function Library:Unload()
