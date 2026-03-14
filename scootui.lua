@@ -68,8 +68,8 @@ local Library do
             Danger = FromRGB(255, 80, 90),
             Success = FromRGB(70, 200, 120),
             Warning = FromRGB(255, 180, 60),
-            Border = FromRGB(45, 45, 52),
-            BorderLight = FromRGB(55, 55, 62),
+            Border = FromRGB(55, 55, 62),      -- Lighter border for 3D effect
+            BorderDark = FromRGB(40, 40, 45),   -- Darker border for depth
             Shadow = FromRGB(0, 0, 0),
         },
 
@@ -171,7 +171,7 @@ local Library do
             corner.Parent = mainFrame
         end
 
-        -- Title bar - ONLY this is draggable
+        -- Title bar
         local titleBar = InstanceNew("Frame")
         titleBar.Name = "TitleBar"
         titleBar.Size = UDim2New(1, 0, 0, 48)
@@ -179,6 +179,15 @@ local Library do
         titleBar.BorderSizePixel = 0
         titleBar.Active = true
         titleBar.Parent = mainFrame
+
+        -- Add border to title bar
+        local titleBorder = InstanceNew("Frame")
+        titleBorder.Name = "Border"
+        titleBorder.Size = UDim2New(1, 0, 1, 1)
+        titleBorder.Position = UDim2New(0, 0, 1, -1)
+        titleBorder.BackgroundColor3 = self.Theme.Border
+        titleBorder.BorderSizePixel = 0
+        titleBorder.Parent = titleBar
 
         if self.RoundedCorners then
             local titleCorner = InstanceNew("UICorner")
@@ -273,7 +282,7 @@ local Library do
             TweenService:Create(closeButton, TweenInfo.new(0.15), {BackgroundColor3 = self.Theme.Element}):Play()
         end)
 
-        -- Fixed minimize functionality
+        -- Minimize functionality
         local minimized = false
         local originalSize = size
         local contentFrames = {}
@@ -281,7 +290,6 @@ local Library do
         minimizeButton.MouseButton1Click:Connect(function()
             minimized = not minimized
             
-            -- Collect all content frames
             contentFrames = {}
             for _, child in pairs(mainFrame:GetChildren()) do
                 if child ~= titleBar and child ~= shadow and child:IsA("Frame") then
@@ -290,24 +298,20 @@ local Library do
             end
 
             if minimized then
-                -- Hide content
                 for _, frame in pairs(contentFrames) do
                     frame.Visible = false
                 end
                 
-                -- Shrink window
                 TweenService:Create(mainFrame, TweenInfo.new(0.25), {
                     Size = UDim2New(originalSize.X.Scale, originalSize.X.Offset, 0, 48)
                 }):Play()
                 
                 minimizeButton.Text = "□"
             else
-                -- Show window
                 TweenService:Create(mainFrame, TweenInfo.new(0.25), {
                     Size = originalSize
                 }):Play()
                 
-                -- Show content after a short delay
                 task.wait(0.15)
                 for _, frame in pairs(contentFrames) do
                     frame.Visible = true
@@ -331,6 +335,15 @@ local Library do
         sidebar.BorderSizePixel = 0
         sidebar.Parent = mainFrame
         sidebar.Active = false
+
+        -- Add border to sidebar
+        local sidebarBorder = InstanceNew("Frame")
+        sidebarBorder.Name = "Border"
+        sidebarBorder.Size = UDim2New(1, 1, 1, 0)
+        sidebarBorder.Position = UDim2New(1, -1, 0, 0)
+        sidebarBorder.BackgroundColor3 = self.Theme.Border
+        sidebarBorder.BorderSizePixel = 0
+        sidebarBorder.Parent = sidebar
 
         if self.RoundedCorners then
             local sidebarCorner = InstanceNew("UICorner")
@@ -376,26 +389,33 @@ local Library do
         contentArea.Parent = mainFrame
         contentArea.Active = false
 
+        -- Add border to content area
+        local contentBorder = InstanceNew("Frame")
+        contentBorder.Name = "Border"
+        contentBorder.Size = UDim2New(1, 0, 1, 1)
+        contentBorder.Position = UDim2New(0, 0, 0, 0)
+        contentBorder.BackgroundColor3 = self.Theme.Border
+        contentBorder.BorderSizePixel = 0
+        contentBorder.Parent = contentArea
+
         if self.RoundedCorners then
             local contentCorner = InstanceNew("UICorner")
             contentCorner.CornerRadius = self.CornerRadius
             contentCorner.Parent = contentArea
         end
 
-        -- FIXED Dragging - Only title bar triggers drag
+        -- Dragging
         local dragging = false
         local dragInput
         local dragStart
         local startPos
 
-        -- Only the title bar initiates dragging
         titleBar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
                 dragStart = input.Position
                 startPos = mainFrame.Position
                 
-                -- Capture mouse to prevent losing drag
                 input.Changed:Connect(function()
                     if input.UserInputState == Enum.UserInputState.End then
                         dragging = false
@@ -410,7 +430,6 @@ local Library do
             end
         end)
 
-        -- Global input changed for dragging
         UserInputService.InputChanged:Connect(function(input)
             if input == dragInput and dragging and not minimized then
                 local delta = input.Position - dragStart
@@ -424,14 +443,6 @@ local Library do
             end
         end)
 
-        -- Prevent drag when clicking on other elements
-        mainFrame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                -- Stop propagation to prevent accidental dragging
-                input:Block()
-            end
-        end)
-
         -- Window methods
         window.MainFrame = mainFrame
         window.Sidebar = sidebar
@@ -440,7 +451,7 @@ local Library do
         window.Tabs = {}
         window.TitleBar = titleBar
 
-        -- FIXED: Add Tab method with proper functionality
+        -- FIXED: Add Tab method with proper indicator positioning
         function window:AddTab(name, icon)
             local tabIndex = #self.Tabs + 1
             
@@ -454,11 +465,21 @@ local Library do
             tabButton.Parent = tabContainer
             tabButton.AutoButtonColor = false
             tabButton.Active = true
+            tabButton.ClipsDescendants = true
+
+            -- Add border to tab button
+            local tabBorder = InstanceNew("Frame")
+            tabBorder.Name = "Border"
+            tabBorder.Size = UDim2New(1, 0, 1, 1)
+            tabBorder.Position = UDim2New(0, 0, 1, -1)
+            tabBorder.BackgroundColor3 = Library.Theme.BorderDark
+            tabBorder.BorderSizePixel = 0
+            tabBorder.Parent = tabButton
 
             -- Button text
             local buttonText = InstanceNew("TextLabel")
             buttonText.Name = "Text"
-            buttonText.Size = UDim2New(1, -30, 1, 0)
+            buttonText.Size = UDim2New(1, -40, 1, 0)
             buttonText.Position = UDim2New(0, 12, 0, 0)
             buttonText.BackgroundTransparency = 1
             buttonText.Text = name
@@ -469,13 +490,29 @@ local Library do
             buttonText.Parent = tabButton
             buttonText.Active = false
 
+            -- Selection indicator (moved to left side)
+            local indicator = InstanceNew("Frame")
+            indicator.Name = "Indicator"
+            indicator.Size = UDim2New(0, 3, 0.8, 0)
+            indicator.Position = UDim2New(0, 0, 0.1, 0)
+            indicator.BackgroundColor3 = Library.Theme.Accent
+            indicator.BorderSizePixel = 0
+            indicator.Visible = false
+            indicator.Parent = tabButton
+            indicator.Active = false
+            indicator.ZIndex = 2
+
             if Library.RoundedCorners then
                 local btnCorner = InstanceNew("UICorner")
                 btnCorner.CornerRadius = Library.SmallCornerRadius
                 btnCorner.Parent = tabButton
+                
+                local indCorner = InstanceNew("UICorner")
+                indCorner.CornerRadius = UDimNew(0, 2)
+                indCorner.Parent = indicator
             end
 
-            -- Tab content container (ScrollingFrame)
+            -- Tab content container
             local tabContent = InstanceNew("ScrollingFrame")
             tabContent.Name = name.."Content"
             tabContent.Size = UDim2New(1, -20, 1, -20)
@@ -490,22 +527,14 @@ local Library do
             tabContent.Parent = contentArea
             tabContent.Active = true
 
-            -- Selection indicator
-            local indicator = InstanceNew("Frame")
-            indicator.Name = "Indicator"
-            indicator.Size = UDim2New(0, 3, 1, -10)
-            indicator.Position = UDim2New(0, 0, 0.5, 0)
-            indicator.BackgroundColor3 = Library.Theme.Accent
-            indicator.BorderSizePixel = 0
-            indicator.Visible = false
-            indicator.Parent = tabButton
-            indicator.Active = false
-
-            if Library.RoundedCorners then
-                local indCorner = InstanceNew("UICorner")
-                indCorner.CornerRadius = UDimNew(0, 2)
-                indCorner.Parent = indicator
-            end
+            -- Add background to content area for visibility
+            local contentBg = InstanceNew("Frame")
+            contentBg.Name = "Background"
+            contentBg.Size = UDim2New(1, 0, 1, 0)
+            contentBg.BackgroundColor3 = Library.Theme.Background
+            contentBg.BorderSizePixel = 0
+            contentBg.Parent = tabContent
+            contentBg.ZIndex = 0
 
             -- Set first tab as active
             if tabIndex == 1 then
@@ -516,7 +545,7 @@ local Library do
                 Library.CurrentPage = tabContent
             end
 
-            -- FIXED: Tab click handler
+            -- Tab click handler
             tabButton.MouseButton1Click:Connect(function()
                 -- Hide all tabs
                 for _, otherTab in pairs(self.Tabs) do
@@ -588,6 +617,16 @@ local Library do
         section.BorderSizePixel = 0
         section.Parent = tab.Content
         section.Active = false
+        section.ClipsDescendants = true
+
+        -- Add border to section
+        local sectionBorder = InstanceNew("Frame")
+        sectionBorder.Name = "Border"
+        sectionBorder.Size = UDim2New(1, 0, 1, 1)
+        sectionBorder.Position = UDim2New(0, 0, 1, -1)
+        sectionBorder.BackgroundColor3 = self.Theme.Border
+        sectionBorder.BorderSizePixel = 0
+        sectionBorder.Parent = section
 
         if self.RoundedCorners then
             local sectionCorner = InstanceNew("UICorner")
@@ -603,6 +642,15 @@ local Library do
         header.BorderSizePixel = 0
         header.Parent = section
         header.Active = false
+
+        -- Add border to header
+        local headerBorder = InstanceNew("Frame")
+        headerBorder.Name = "Border"
+        headerBorder.Size = UDim2New(1, 0, 1, 1)
+        headerBorder.Position = UDim2New(0, 0, 1, -1)
+        headerBorder.BackgroundColor3 = self.Theme.BorderDark
+        headerBorder.BorderSizePixel = 0
+        headerBorder.Parent = header
 
         if self.RoundedCorners then
             local headerCorner = InstanceNew("UICorner")
@@ -648,6 +696,16 @@ local Library do
         button.Parent = section
         button.AutoButtonColor = false
         button.Active = true
+        button.ClipsDescendants = true
+
+        -- Add border to button
+        local buttonBorder = InstanceNew("Frame")
+        buttonBorder.Name = "Border"
+        buttonBorder.Size = UDim2New(1, 0, 1, 1)
+        buttonBorder.Position = UDim2New(0, 0, 1, -1)
+        buttonBorder.BackgroundColor3 = self.Theme.BorderDark
+        buttonBorder.BorderSizePixel = 0
+        buttonBorder.Parent = button
 
         if self.RoundedCorners then
             local btnCorner = InstanceNew("UICorner")
@@ -701,6 +759,16 @@ local Library do
         toggle.BackgroundTransparency = 0.5
         toggle.Parent = section
         toggle.Active = true
+        toggle.ClipsDescendants = true
+
+        -- Add border to toggle
+        local toggleBorder = InstanceNew("Frame")
+        toggleBorder.Name = "Border"
+        toggleBorder.Size = UDim2New(1, 0, 1, 1)
+        toggleBorder.Position = UDim2New(0, 0, 1, -1)
+        toggleBorder.BackgroundColor3 = self.Theme.BorderDark
+        toggleBorder.BorderSizePixel = 0
+        toggleBorder.Parent = toggle
 
         if self.RoundedCorners then
             local toggleCorner = InstanceNew("UICorner")
@@ -853,7 +921,7 @@ local Library do
             fillCorner.Parent = sliderFill
         end
 
-        -- Slider button (draggable)
+        -- Slider button
         local sliderButton = InstanceNew("TextButton")
         sliderButton.Name = "Button"
         sliderButton.Size = UDim2New(1, 0, 3, 0)
@@ -922,6 +990,15 @@ local Library do
         dropdown.Parent = section
         dropdown.Active = true
 
+        -- Add border to dropdown
+        local dropdownBorder = InstanceNew("Frame")
+        dropdownBorder.Name = "Border"
+        dropdownBorder.Size = UDim2New(1, 0, 1, 1)
+        dropdownBorder.Position = UDim2New(0, 0, 1, -1)
+        dropdownBorder.BackgroundColor3 = self.Theme.BorderDark
+        dropdownBorder.BorderSizePixel = 0
+        dropdownBorder.Parent = dropdown
+
         if self.RoundedCorners then
             local dropCorner = InstanceNew("UICorner")
             dropCorner.CornerRadius = self.SmallCornerRadius
@@ -976,6 +1053,15 @@ local Library do
                 optionBtn.Visible = false
                 optionBtn.Active = true
                 optionBtn.AutoButtonColor = false
+
+                -- Add border to option
+                local optBorder = InstanceNew("Frame")
+                optBorder.Name = "Border"
+                optBorder.Size = UDim2New(1, 0, 1, 1)
+                optBorder.Position = UDim2New(0, 0, 1, -1)
+                optBorder.BackgroundColor3 = self.Theme.BorderDark
+                optBorder.BorderSizePixel = 0
+                optBorder.Parent = optionBtn
 
                 if self.RoundedCorners then
                     local optCorner = InstanceNew("UICorner")
@@ -1062,6 +1148,15 @@ local Library do
         colorPicker.Parent = section
         colorPicker.Active = true
 
+        -- Add border to color picker
+        local pickerBorder = InstanceNew("Frame")
+        pickerBorder.Name = "Border"
+        pickerBorder.Size = UDim2New(1, 0, 1, 1)
+        pickerBorder.Position = UDim2New(0, 0, 1, -1)
+        pickerBorder.BackgroundColor3 = self.Theme.BorderDark
+        pickerBorder.BorderSizePixel = 0
+        pickerBorder.Parent = colorPicker
+
         if self.RoundedCorners then
             local pickerCorner = InstanceNew("UICorner")
             pickerCorner.CornerRadius = self.SmallCornerRadius
@@ -1123,6 +1218,15 @@ local Library do
         notification.ClipsDescendants = true
         notification.Parent = self.NotifHolder
         notification.Active = false
+
+        -- Add border to notification
+        local notifBorder = InstanceNew("Frame")
+        notifBorder.Name = "Border"
+        notifBorder.Size = UDim2New(1, 0, 1, 1)
+        notifBorder.Position = UDim2New(0, 0, 1, -1)
+        notifBorder.BackgroundColor3 = self.Theme.Border
+        notifBorder.BorderSizePixel = 0
+        notifBorder.Parent = notification
 
         if self.RoundedCorners then
             local notifCorner = InstanceNew("UICorner")
