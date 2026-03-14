@@ -226,7 +226,7 @@ local Library do
 		    ["Border"] = FromRGB(220, 218, 215),
 		    ["Inline"] = FromRGB(255, 255, 255),
 		    ["Hovered Element"] = FromRGB(200, 220, 195), -- Light matcha
-		    ["Page Background"] = FromRGB(250, 248, 245),
+		    ["Page Background"] = FromRGB(230, 230, 250),
 		    ["Outline"] = FromRGB(220, 218, 215),
 		    ["Element"] = FromRGB(255, 255, 255),
 		    ["Gradient"] = FromRGB(250, 248, 245), -- No real gradient, just base color
