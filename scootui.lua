@@ -222,18 +222,18 @@ local Library do
 
     local Themes = {
 		["Preset"] = {
-    		["Background"] = FromRGB(245, 240, 255), -- Soft lavender cream
-    		["Border"] = FromRGB(210, 200, 230), -- Light purple border
-    		["Inline"] = FromRGB(255, 255, 255), -- Keep white for contrast
-    		["Hovered Element"] = FromRGB(225, 215, 245), -- Light lavender hover
-    		["Page Background"] = FromRGB(235, 225, 250), -- Soft purple page background
-    		["Outline"] = FromRGB(210, 200, 230), -- Matching purple outline
-    		["Element"] = FromRGB(255, 255, 255), -- Keep white elements for contrast
-    		["Gradient"] = FromRGB(245, 240, 255), -- Matching lavender base
-    		["Text"] = FromRGB(65, 50, 95), -- Deep purple text (good contrast on light backgrounds)
-    		["Text Stroke"] = FromRGB(255, 255, 255), -- Keep white stroke
-    		["Placeholder Text"] = FromRGB(140, 120, 170), -- Muted purple placeholder
-    		["Accent"] = FromRGB(150, 120, 210) -- Vibrant purple accent (replaces green)
+    		["Background"] = FromRGB(75, 55, 115), -- Deep purple background
+    		["Border"] = FromRGB(140, 110, 200), -- Lighter purple border
+    		["Inline"] = FromRGB(100, 75, 150), -- Medium purple for inline elements
+    		["Hovered Element"] = FromRGB(155, 125, 215), -- Brighter purple for hover
+    		["Page Background"] = FromRGB(85, 65, 135), -- Slightly lighter purple for pages
+    		["Outline"] = FromRGB(140, 110, 200), -- Matching lighter purple outline
+    		["Element"] = FromRGB(95, 70, 150), -- Medium-dark purple elements
+    		["Gradient"] = FromRGB(75, 55, 115), -- Base purple
+    		["Text"] = FromRGB(255, 255, 255), -- Pure white text
+    		["Text Stroke"] = FromRGB(40, 25, 65), -- Dark purple stroke for depth
+    		["Placeholder Text"] = FromRGB(210, 200, 240), -- Light purple-white for placeholders
+    		["Accent"] = FromRGB(180, 130, 255) -- Bright purple accent
 		}
     }
 
