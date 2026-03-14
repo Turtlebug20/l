@@ -222,18 +222,18 @@ local Library do
 
     local Themes = {
 		["Preset"] = {
-		    ["Background"] = FromRGB(85, 45, 115), -- Soft cream
-		    ["Border"] = FromRGB(220, 218, 215),
-		    ["Inline"] = FromRGB(255, 255, 255),
-		    ["Hovered Element"] = FromRGB(200, 220, 195), -- Light matcha
-		    ["Page Background"] = FromRGB(230, 230, 250),
-		    ["Outline"] = FromRGB(220, 218, 215),
-		    ["Element"] = FromRGB(255, 255, 255),
-		    ["Gradient"] = FromRGB(250, 248, 245), -- No real gradient, just base color
-		    ["Text"] = FromRGB(80, 80, 80),
-		    ["Text Stroke"] = FromRGB(255, 255, 255), -- White stroke for light theme
-		    ["Placeholder Text"] = FromRGB(120, 120, 120),
-		    ["Accent"] = FromRGB(147, 179, 141) -- Matcha green
+    		["Background"] = FromRGB(245, 240, 255), -- Soft lavender cream
+    		["Border"] = FromRGB(210, 200, 230), -- Light purple border
+    		["Inline"] = FromRGB(255, 255, 255), -- Keep white for contrast
+    		["Hovered Element"] = FromRGB(225, 215, 245), -- Light lavender hover
+    		["Page Background"] = FromRGB(235, 225, 250), -- Soft purple page background
+    		["Outline"] = FromRGB(210, 200, 230), -- Matching purple outline
+    		["Element"] = FromRGB(255, 255, 255), -- Keep white elements for contrast
+    		["Gradient"] = FromRGB(245, 240, 255), -- Matching lavender base
+    		["Text"] = FromRGB(65, 50, 95), -- Deep purple text (good contrast on light backgrounds)
+    		["Text Stroke"] = FromRGB(255, 255, 255), -- Keep white stroke
+    		["Placeholder Text"] = FromRGB(140, 120, 170), -- Muted purple placeholder
+    		["Accent"] = FromRGB(150, 120, 210) -- Vibrant purple accent (replaces green)
 		}
     }
 
