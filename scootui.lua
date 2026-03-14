@@ -79,9 +79,9 @@ local Library do
         FadeSpeed = 0.2,
 
         Folders = {
-            Directory = "scoot",
-            Configs = "scoot/Configs",
-            Assets = "scoot/Assets",
+            Directory = "vast",
+            Configs = "vast/Configs",
+            Assets = "vast/Assets",
         },
 
         Images = {
@@ -222,7 +222,7 @@ local Library do
 
     local Themes = {
 		["Preset"] = {
-		    ["Background"] = FromRGB(250, 248, 245), -- Soft cream
+		    ["Background"] = FromRGB(85, 45, 115), -- Soft cream
 		    ["Border"] = FromRGB(220, 218, 215),
 		    ["Inline"] = FromRGB(255, 255, 255),
 		    ["Hovered Element"] = FromRGB(200, 220, 195), -- Light matcha
